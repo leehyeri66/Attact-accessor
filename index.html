@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEFENDER.DE5.NET | SECURED NODE</title>
+    <style>
+        :root {
+            --primary: #00f2ff;
+            --secondary: #7000ff;
+            --danger: #ff003c;
+            --bg: #020508;
+            --panel-bg: rgba(0, 15, 25, 0.7);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { 
+            height: 100%; 
+            background: var(--bg); 
+            color: var(--primary); 
+            font-family: 'Segoe UI', 'Courier New', monospace;
+            overflow: hidden;
+        }
+
+        /* 背景 Canvas */
+        #canvas {
+            position: fixed;
+            top: 0; left: 0;
+            z-index: -1;
+            filter: blur(1px);
+        }
+
+        /* 全局扫描线和噪声 */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px);
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* 顶部导航 */
+        header {
+            height: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 40px;
+            background: rgba(0, 10, 20, 0.8);
+            border-bottom: 1px solid var(--primary);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
+        }
+
+        .logo { font-size: 22px; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; }
+        .logo span { color: white; text-shadow: 0 0 10px var(--primary); }
+
+        .btn-access {
+            border: 1px solid var(--primary);
+            padding: 5px 15px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .btn-access:hover { background: var(--primary); color: black; box-shadow: 0 0 20px var(--primary); }
+
+        /* 面板布局 */
+        .container {
+            display: grid;
+            grid-template-columns: 350px 1fr 350px;
+            gap: 20px;
+            padding: 20px;
+            height: calc(100vh - 60px);
+        }
+
+        .view-section {
+            display: contents; /* 默认显示首页内容 */
+        }
+
+        .hidden { display: none !important; }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            backdrop-filter: blur(10px);
+            position: relative;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .panel::before {
+            content: ""; position: absolute; top: 0; left: 0; width: 10px; height: 10px;
+            border-top: 2px solid var(--primary); border-left: 2px solid var(--primary);
+        }
+
+        /* 动画数字 */
+        .counter { font-size: 32px; font-weight: bold; margin: 10px 0; }
+
+        /* 登录/验证面板 */
+        #login-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 5, 10, 0.95);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .passcode-box {
+            width: 400px;
+            text-align: center;
+            border: 1px solid var(--secondary);
+            padding: 40px;
+            box-shadow: 0 0 50px rgba(112, 0, 255, 0.3);
+        }
+
+        input {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--secondary);
+            color: white;
+            font-size: 24px;
+            text-align: center;
+            outline: none;
+            width: 100%;
+            margin-top: 20px;
+            letter-spacing: 5px;
+        }
+
+        /* Admin 特有风格 */
+        .admin-theme { --primary: #ff003c; color: var(--danger); }
+        .admin-theme .panel { border-color: rgba(255, 0, 60, 0.3); }
+
+        /* 打字机效果 */
+        .typing {
+            overflow: hidden;
+            border-right: .15em solid var(--primary);
+            white-space: nowrap;
+            margin: 0 auto;
+            animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
+        }
+
+        @keyframes typing { from { width: 0 } to { width: 100% } }
+        @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: var(--primary); } }
+
+    </style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+<div class="overlay"></div>
+
+<header>
+    <div class="logo">DEFENDER<span>.DE5.NET</span></div>
+    <div style="font-size: 12px; opacity: 0.7;">STATUS: <span id="sys-status" style="color: #0f0;">ENCRYPTED</span></div>
+    <div class="btn-access" onclick="showLogin()">RESTRICTED ACCESS</div>
+</header>
+
+<!-- 1. 公共仪表盘 (Home) -->
+<div id="home-view" class="container view-section">
+    <div class="panel">
+        <h3>GLOBAL TRAFFIC</h3>
+        <div class="counter" id="traffic-count">1,204,502</div>
+        <div id="mini-graph" style="height: 100px; border-bottom: 1px solid rgba(0,242,255,0.1);">
+            <!-- 这里可以放动态折线图 -->
+        </div>
+        <p style="font-size:12px; margin-top:10px;">Threat Level: <span style="color:var(--danger)">LOW</span></p>
+    </div>
+    
+    <div class="panel" style="display: flex; justify-content: center; align-items: center; flex-direction: column;">
+        <h1 style="font-size: 4rem; opacity: 0.1; position: absolute;">DEFENDER</h1>
+        <div id="radar" style="width: 250px; height: 250px; border-radius: 50%; border: 1px solid var(--primary); position: relative;">
+            <div style="position: absolute; top: 50%; left: 50%; width: 50%; height: 2px; background: var(--primary); transform-origin: left; animation: rotate 4s linear infinite;"></div>
+        </div>
+        <p class="typing" style="margin-top: 20px;">Scanning deep-web nodes...</p>
+    </div>
+
+    <div class="panel">
+        <h3>LATEST EVENTS</h3>
+        <div id="logs" style="font-size: 11px; height: 100%; overflow: hidden;"></div>
+    </div>
+</div>
+
+<!-- 2. 登录弹窗 (Passcode) -->
+<div id="login-overlay" class="hidden">
+    <div class="passcode-box">
+        <h2 style="color: var(--secondary);">LEVEL 4 AUTHENTICATION</h2>
+        <p style="font-size: 10px; margin-top: 10px;">AUTHORIZATION REQUIRED FOR NODE: DE5_ADMIN</p>
+        <input type="password" id="passcode" placeholder="ENTER CODE" onkeydown="checkPass(event)">
+        <p id="login-msg" style="margin-top:15px; font-size:12px;"></p>
+        <button class="btn-access" style="margin-top: 20px;" onclick="validate()">INITIALIZE</button>
+        <button class="btn-access" style="margin-top: 20px; border-color: gray;" onclick="hideLogin()">ABORT</button>
+    </div>
+</div>
+
+<!-- 3. 管理后台 (Admin View) -->
+<div id="admin-view" class="container view-section hidden admin-theme">
+    <div class="panel">
+        <h3>CORE SYSTEMS</h3>
+        <div style="margin: 20px 0;">
+            <p>DATABASE ENCRYPTION: 98%</p>
+            <div style="width:100%; height:4px; background:rgba(255,0,0,0.2); margin-top:5px;">
+                <div style="width:98%; height:100%; background:var(--danger);"></div>
+            </div>
+        </div>
+        <div style="margin: 20px 0;">
+            <p>NEURAL LINK: ACTIVE</p>
+            <p style="font-size: 24px;">STABLE</p>
+        </div>
+    </div>
+    <div class="panel" style="grid-column: span 2;">
+        <h2 style="border-bottom: 1px solid var(--danger);">ROOT@DEFENDER:~# <span id="admin-text"></span></h2>
+        <div id="admin-console" style="font-family: monospace; font-size: 14px; margin-top: 20px; line-height: 1.6;">
+            > Initiating system takeover... <br>
+            > Bypassing defender.de5.net security layers... <br>
+            > Accessing kernel v4.0.1... <br>
+            <span style="color: white;">> WELCOME, ADMINISTRATOR.</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 1. 背景粒子系统 ---
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function initCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+
+    class Particle {
+        constructor() {
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * canvas.height;
+            this.vx = (Math.random() - 0.5) * 0.5;
+            this.vy = (Math.random() - 0.5) * 0.5;
+        }
+        update() {
+            this.x += this.vx; this.y += this.vy;
+            if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+            if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 1, 0, Math.PI * 2);
+            ctx.fillStyle = document.body.classList.contains('admin-theme') ? '#ff003c' : '#00f2ff';
+            ctx.fill();
+        }
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+            p.update();
+            p.draw();
+        });
+        // 连线
+        ctx.strokeStyle = document.body.classList.contains('admin-theme') ? 'rgba(255,0,60,0.1)' : 'rgba(0,242,255,0.1)';
+        for(let i=0; i<particles.length; i++) {
+            for(let j=i+1; j<particles.length; j++) {
+                let dist = Math.hypot(particles[i].x - particles[j].x, particles[i].y - particles[j].y);
+                if(dist < 100) {
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.stroke();
+                }
+            }
+        }
+        requestAnimationFrame(animate);
+    }
+
+    initCanvas();
+    for(let i=0; i<100; i++) particles.push(new Particle());
+    animate();
+
+    // --- 2. 界面逻辑 ---
+    function showLogin() {
+        document.getElementById('login-overlay').classList.remove('hidden');
+        document.getElementById('passcode').focus();
+    }
+
+    function hideLogin() {
+        document.getElementById('login-overlay').classList.add('hidden');
+    }
+
+    function checkPass(e) {
+        if(e.key === "Enter") validate();
+    }
+
+    function validate() {
+        const code = document.getElementById('passcode').value;
+        const msg = document.getElementById('login-msg');
+        
+        if(code === "1337" || code === "admin") {
+            msg.innerHTML = "ACCESS GRANTED. REDIRECTING...";
+            msg.style.color = "#0f0";
+            setTimeout(enterAdmin, 1000);
+        } else {
+            msg.innerHTML = "INVALID PASSCODE. ACCESS DENIED.";
+            msg.style.color = "var(--danger)";
+            // 震动效果
+            document.querySelector('.passcode-box').style.animation = "shake 0.2s 3";
+            setTimeout(() => { document.querySelector('.passcode-box').style.animation = ""; }, 600);
+        }
+    }
+
+    function enterAdmin() {
+        document.getElementById('login-overlay').classList.add('hidden');
+        document.getElementById('home-view').classList.add('hidden');
+        document.getElementById('admin-view').classList.remove('hidden');
+        document.body.classList.add('admin-theme');
+        document.getElementById('sys-status').innerText = "SYSTEM CRITICAL / OVERRIDE";
+        document.getElementById('sys-status').style.color = "var(--danger)";
+    }
+
+    // --- 3. 动态数据模拟 ---
+    setInterval(() => {
+        const count = document.getElementById('traffic-count');
+        if(count) {
+            let val = parseInt(count.innerText.replace(/,/g, ''));
+            count.innerText = (val + Math.floor(Math.random()*50)).toLocaleString();
+        }
+
+        const logs = document.getElementById('logs');
+        if(logs) {
+            const div = document.createElement('div');
+            div.style.padding = "5px 0";
+            div.innerHTML = `<span style="color:var(--secondary)">[${new Date().toLocaleTimeString()}]</span> Incoming packet from node_${Math.floor(Math.random()*999)} - <span style="color:#0f0">VERIFIED</span>`;
+            logs.prepend(div);
+            if(logs.childNodes.length > 15) logs.removeChild(logs.lastChild);
+        }
+    }, 2000);
+
+    // 旋转雷达动画 CSS 辅助
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @keyframes rotate { from { transform: translate(-0%, -50%) rotate(0deg); } to { transform: translate(-0%, -50%) rotate(360deg); } }
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(10px); } 50% { transform: translateX(-10px); } 100% { transform: translateX(0); } }
+    `;
+    document.head.appendChild(style);
+
+</script>
+</body>
+</html>
