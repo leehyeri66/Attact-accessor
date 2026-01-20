@@ -2,348 +2,368 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DEFENDER.DE5.NET | SECURED NODE</title>
+    <title>DEFENDER.DE5.NET // SECURITY_CORE</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;500;800&display=swap');
+
         :root {
-            --primary: #00f2ff;
-            --secondary: #7000ff;
-            --danger: #ff003c;
-            --bg: #020508;
-            --panel-bg: rgba(0, 15, 25, 0.7);
+            --glow: #00ff41;
+            --accent: #008f11;
+            --bg: #0d0208;
+            --alert: #ff003c;
+            --font: 'JetBrains Mono', monospace;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body, html { 
-            height: 100%; 
-            background: var(--bg); 
-            color: var(--primary); 
-            font-family: 'Segoe UI', 'Courier New', monospace;
+        body, html {
+            margin: 0; padding: 0;
+            background: var(--bg);
+            color: var(--glow);
+            font-family: var(--font);
             overflow: hidden;
+            height: 100vh;
         }
 
-        /* 背景 Canvas */
-        #canvas {
+        /* 故障背景效果 */
+        canvas#matrix {
             position: fixed;
             top: 0; left: 0;
-            z-index: -1;
-            filter: blur(1px);
+            z-index: -2;
+            opacity: 0.15;
         }
 
-        /* 全局扫描线和噪声 */
-        .overlay {
+        .crt-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px);
-            pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
+            background-size: 100% 2px, 3px 100%;
             z-index: 1000;
+            pointer-events: none;
         }
 
-        /* 顶部导航 */
-        header {
-            height: 60px;
+        /* 顶部状态栏 */
+        .top-bar {
+            height: 40px;
+            border-bottom: 1px solid var(--accent);
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 0 40px;
-            background: rgba(0, 10, 20, 0.8);
-            border-bottom: 1px solid var(--primary);
-            box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
-        }
-
-        .logo { font-size: 22px; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; }
-        .logo span { color: white; text-shadow: 0 0 10px var(--primary); }
-
-        .btn-access {
-            border: 1px solid var(--primary);
-            padding: 5px 15px;
-            cursor: pointer;
-            transition: 0.3s;
+            padding: 0 20px;
+            background: rgba(0, 20, 0, 0.8);
+            justify-content: space-between;
             font-size: 12px;
-            font-weight: bold;
+            letter-spacing: 2px;
         }
-        .btn-access:hover { background: var(--primary); color: black; box-shadow: 0 0 20px var(--primary); }
 
-        /* 面板布局 */
-        .container {
+        /* 核心布局 */
+        .dashboard {
             display: grid;
-            grid-template-columns: 350px 1fr 350px;
-            gap: 20px;
-            padding: 20px;
-            height: calc(100vh - 60px);
+            grid-template-columns: 320px 1fr 320px;
+            height: calc(100vh - 40px);
+            gap: 10px;
+            padding: 10px;
         }
 
-        .view-section {
-            display: contents; /* 默认显示首页内容 */
-        }
+        .col { display: flex; flex-direction: column; gap: 10px; }
 
-        .hidden { display: none !important; }
-
-        .panel {
-            background: var(--panel-bg);
-            border: 1px solid rgba(0, 242, 255, 0.2);
-            backdrop-filter: blur(10px);
+        .widget {
+            border: 1px solid var(--accent);
+            background: rgba(0, 15, 0, 0.4);
             position: relative;
-            padding: 20px;
             overflow: hidden;
         }
 
-        .panel::before {
-            content: ""; position: absolute; top: 0; left: 0; width: 10px; height: 10px;
-            border-top: 2px solid var(--primary); border-left: 2px solid var(--primary);
+        .widget-header {
+            background: var(--accent);
+            color: var(--bg);
+            padding: 2px 10px;
+            font-weight: 800;
+            font-size: 10px;
+            text-transform: uppercase;
         }
 
-        /* 动画数字 */
-        .counter { font-size: 32px; font-weight: bold; margin: 10px 0; }
-
-        /* 登录/验证面板 */
-        #login-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 5, 10, 0.95);
-            z-index: 2000;
+        /* 防御核心 SVG 动画 */
+        .core-center {
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            position: relative;
         }
 
-        .passcode-box {
-            width: 400px;
+        .shield-svg {
+            width: 300px;
+            filter: drop-shadow(0 0 15px var(--glow));
+            animation: pulse 4s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+
+        /* 实时终端 */
+        .terminal {
+            font-size: 9px;
+            line-height: 1.2;
+            padding: 10px;
+            flex-grow: 1;
+            overflow-y: hidden;
+        }
+
+        .cursor { display: inline-block; width: 6px; height: 12px; background: var(--glow); animation: blink 0.8s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* 登录覆盖层 */
+        #login-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.8s cubic-bezier(0.85, 0, 0.15, 1);
+        }
+
+        .login-box {
             text-align: center;
-            border: 1px solid var(--secondary);
-            padding: 40px;
-            box-shadow: 0 0 50px rgba(112, 0, 255, 0.3);
+            border: 2px solid var(--glow);
+            padding: 50px;
+            background: rgba(0, 30, 0, 0.5);
+            box-shadow: 0 0 50px rgba(0, 255, 65, 0.2);
         }
 
         input {
             background: transparent;
-            border: none;
-            border-bottom: 2px solid var(--secondary);
-            color: white;
-            font-size: 24px;
+            border: 1px solid var(--glow);
+            color: var(--glow);
+            padding: 10px;
+            font-family: inherit;
+            font-size: 20px;
             text-align: center;
-            outline: none;
-            width: 100%;
             margin-top: 20px;
-            letter-spacing: 5px;
+            width: 300px;
+            outline: none;
         }
 
-        /* Admin 特有风格 */
-        .admin-theme { --primary: #ff003c; color: var(--danger); }
-        .admin-theme .panel { border-color: rgba(255, 0, 60, 0.3); }
-
-        /* 打字机效果 */
-        .typing {
-            overflow: hidden;
-            border-right: .15em solid var(--primary);
-            white-space: nowrap;
-            margin: 0 auto;
-            animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
+        .btn-auth {
+            margin-top: 20px;
+            padding: 10px 30px;
+            border: 1px solid var(--glow);
+            background: transparent;
+            color: var(--glow);
+            cursor: pointer;
+            font-weight: bold;
         }
 
-        @keyframes typing { from { width: 0 } to { width: 100% } }
-        @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: var(--primary); } }
+        .btn-auth:hover { background: var(--glow); color: var(--bg); }
+
+        /* 隐藏状态 */
+        .authenticated #login-screen { transform: translateY(-100%); }
+
+        /* 数据波形 */
+        .waves { height: 60px; display: flex; align-items: flex-end; gap: 2px; padding: 10px; }
+        .bar { width: 4px; background: var(--glow); animation: barGrow 1s infinite alternate; }
+
+        @keyframes barGrow { 0% { height: 10%; } 100% { height: 100%; } }
+
+        /* 管理员特权风格 */
+        .admin-alert {
+            color: var(--alert) !important;
+            border-color: var(--alert) !important;
+            text-shadow: 0 0 10px var(--alert);
+        }
 
     </style>
 </head>
 <body>
 
-<canvas id="canvas"></canvas>
-<div class="overlay"></div>
+<canvas id="matrix"></canvas>
+<div class="crt-overlay"></div>
 
-<header>
-    <div class="logo">DEFENDER<span>.DE5.NET</span></div>
-    <div style="font-size: 12px; opacity: 0.7;">STATUS: <span id="sys-status" style="color: #0f0;">ENCRYPTED</span></div>
-    <div class="btn-access" onclick="showLogin()">RESTRICTED ACCESS</div>
-</header>
-
-<!-- 1. 公共仪表盘 (Home) -->
-<div id="home-view" class="container view-section">
-    <div class="panel">
-        <h3>GLOBAL TRAFFIC</h3>
-        <div class="counter" id="traffic-count">1,204,502</div>
-        <div id="mini-graph" style="height: 100px; border-bottom: 1px solid rgba(0,242,255,0.1);">
-            <!-- 这里可以放动态折线图 -->
-        </div>
-        <p style="font-size:12px; margin-top:10px;">Threat Level: <span style="color:var(--danger)">LOW</span></p>
-    </div>
-    
-    <div class="panel" style="display: flex; justify-content: center; align-items: center; flex-direction: column;">
-        <h1 style="font-size: 4rem; opacity: 0.1; position: absolute;">DEFENDER</h1>
-        <div id="radar" style="width: 250px; height: 250px; border-radius: 50%; border: 1px solid var(--primary); position: relative;">
-            <div style="position: absolute; top: 50%; left: 50%; width: 50%; height: 2px; background: var(--primary); transform-origin: left; animation: rotate 4s linear infinite;"></div>
-        </div>
-        <p class="typing" style="margin-top: 20px;">Scanning deep-web nodes...</p>
-    </div>
-
-    <div class="panel">
-        <h3>LATEST EVENTS</h3>
-        <div id="logs" style="font-size: 11px; height: 100%; overflow: hidden;"></div>
+<!-- 登录/访问控制层 -->
+<div id="login-screen">
+    <div class="login-box" id="auth-box">
+        <div style="font-size: 10px; letter-spacing: 5px;">SECURITY GATEWAY</div>
+        <h1 id="domain-head">DEFENDER.DE5.NET</h1>
+        <p style="font-size: 12px; color: var(--accent);">PLEASE ENTER ACCESS AUTHORIZATION CODE</p>
+        <input type="password" id="passcode" placeholder="********" autocomplete="off">
+        <br>
+        <button class="btn-auth" onclick="verify()">DECRYPT</button>
+        <div id="error-msg" style="color: var(--alert); margin-top: 10px; font-size: 12px; height: 15px;"></div>
     </div>
 </div>
 
-<!-- 2. 登录弹窗 (Passcode) -->
-<div id="login-overlay" class="hidden">
-    <div class="passcode-box">
-        <h2 style="color: var(--secondary);">LEVEL 4 AUTHENTICATION</h2>
-        <p style="font-size: 10px; margin-top: 10px;">AUTHORIZATION REQUIRED FOR NODE: DE5_ADMIN</p>
-        <input type="password" id="passcode" placeholder="ENTER CODE" onkeydown="checkPass(event)">
-        <p id="login-msg" style="margin-top:15px; font-size:12px;"></p>
-        <button class="btn-access" style="margin-top: 20px;" onclick="validate()">INITIALIZE</button>
-        <button class="btn-access" style="margin-top: 20px; border-color: gray;" onclick="hideLogin()">ABORT</button>
-    </div>
+<div class="top-bar">
+    <div>NODE: DEFENDER-01 // SERVER: de5.net</div>
+    <div id="uptime">UPTIME: 00:00:00:00</div>
+    <div>LATENCY: 12ms // ENCRYPTION: AES-256-GCM</div>
 </div>
 
-<!-- 3. 管理后台 (Admin View) -->
-<div id="admin-view" class="container view-section hidden admin-theme">
-    <div class="panel">
-        <h3>CORE SYSTEMS</h3>
-        <div style="margin: 20px 0;">
-            <p>DATABASE ENCRYPTION: 98%</p>
-            <div style="width:100%; height:4px; background:rgba(255,0,0,0.2); margin-top:5px;">
-                <div style="width:98%; height:100%; background:var(--danger);"></div>
+<div class="dashboard">
+    <!-- 左侧：抓包与实时监测 -->
+    <div class="col">
+        <div class="widget" style="flex: 2;">
+            <div class="widget-header">Live Packet Sniffer</div>
+            <div class="terminal" id="sniffer-logs"></div>
+        </div>
+        <div class="widget" style="flex: 1;">
+            <div class="widget-header">Neural Link Load</div>
+            <div class="waves" id="wave-container"></div>
+        </div>
+    </div>
+
+    <!-- 中间：核心状态 -->
+    <div class="col">
+        <div class="widget core-center" style="flex: 1;">
+            <div class="widget-header" style="position: absolute; top:0; width:100%;">Defense Core Topology</div>
+            
+            <!-- SVG 动态盾牌 -->
+            <svg class="shield-svg" viewBox="0 0 200 200">
+                <circle cx="100" cy="100" r="90" fill="none" stroke="var(--accent)" stroke-width="0.5" stroke-dasharray="10 5" />
+                <path d="M100 30 L140 50 V90 C140 120 100 150 100 150 C100 150 60 120 60 90 V50 L100 30" 
+                      fill="none" stroke="var(--glow)" stroke-width="2" id="shield-path">
+                </path>
+                <circle cx="100" cy="100" r="10" fill="var(--glow)">
+                    <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite" />
+                </circle>
+            </svg>
+
+            <div style="margin-top: 20px; text-align: center;">
+                <div style="font-size: 24px; font-weight: 800;">PROTECTION ACTIVE</div>
+                <div id="sys-msg" style="font-size: 12px; color: var(--accent);">Waiting for command...</div>
             </div>
         </div>
-        <div style="margin: 20px 0;">
-            <p>NEURAL LINK: ACTIVE</p>
-            <p style="font-size: 24px;">STABLE</p>
-        </div>
     </div>
-    <div class="panel" style="grid-column: span 2;">
-        <h2 style="border-bottom: 1px solid var(--danger);">ROOT@DEFENDER:~# <span id="admin-text"></span></h2>
-        <div id="admin-console" style="font-family: monospace; font-size: 14px; margin-top: 20px; line-height: 1.6;">
-            > Initiating system takeover... <br>
-            > Bypassing defender.de5.net security layers... <br>
-            > Accessing kernel v4.0.1... <br>
-            <span style="color: white;">> WELCOME, ADMINISTRATOR.</span>
+
+    <!-- 右侧：威胁情报与控制台 -->
+    <div class="col">
+        <div class="widget" style="flex: 1;">
+            <div class="widget-header">Threat Intelligence</div>
+            <div id="threat-list" style="padding: 10px; font-size: 10px;"></div>
+        </div>
+        <div class="widget" style="flex: 1;">
+            <div class="widget-header">System Console</div>
+            <div class="terminal" id="console-output">
+                > DEFENDER-OS Initialized...<br>
+                > Loading kernel modules...<br>
+                > Domain link: defender.de5.net [OK]<br>
+                <span class="cursor"></span>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    // --- 1. 背景粒子系统 ---
-    const canvas = document.getElementById('canvas');
+    // 1. Matrix Background
+    const canvas = document.getElementById('matrix');
     const ctx = canvas.getContext('2d');
-    let particles = [];
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()*&^";
+    const fontSize = 14;
+    const columns = canvas.width / fontSize;
+    const drops = Array(Math.floor(columns)).fill(1);
 
-    function initCanvas() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
-
-    class Particle {
-        constructor() {
-            this.x = Math.random() * canvas.width;
-            this.y = Math.random() * canvas.height;
-            this.vx = (Math.random() - 0.5) * 0.5;
-            this.vy = (Math.random() - 0.5) * 0.5;
-        }
-        update() {
-            this.x += this.vx; this.y += this.vy;
-            if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
-            if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
-        }
-        draw() {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, 1, 0, Math.PI * 2);
-            ctx.fillStyle = document.body.classList.contains('admin-theme') ? '#ff003c' : '#00f2ff';
-            ctx.fill();
+    function drawMatrix() {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#0F0";
+        ctx.font = fontSize + "px monospace";
+        for (let i = 0; i < drops.length; i++) {
+            const text = chars[Math.floor(Math.random() * chars.length)];
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+            drops[i]++;
         }
     }
+    setInterval(drawMatrix, 50);
 
-    function animate() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        particles.forEach(p => {
-            p.update();
-            p.draw();
-        });
-        // 连线
-        ctx.strokeStyle = document.body.classList.contains('admin-theme') ? 'rgba(255,0,60,0.1)' : 'rgba(0,242,255,0.1)';
-        for(let i=0; i<particles.length; i++) {
-            for(let j=i+1; j<particles.length; j++) {
-                let dist = Math.hypot(particles[i].x - particles[j].x, particles[i].y - particles[j].y);
-                if(dist < 100) {
-                    ctx.beginPath();
-                    ctx.moveTo(particles[i].x, particles[i].y);
-                    ctx.lineTo(particles[j].x, particles[j].y);
-                    ctx.stroke();
-                }
-            }
-        }
-        requestAnimationFrame(animate);
-    }
-
-    initCanvas();
-    for(let i=0; i<100; i++) particles.push(new Particle());
-    animate();
-
-    // --- 2. 界面逻辑 ---
-    function showLogin() {
-        document.getElementById('login-overlay').classList.remove('hidden');
-        document.getElementById('passcode').focus();
-    }
-
-    function hideLogin() {
-        document.getElementById('login-overlay').classList.add('hidden');
-    }
-
-    function checkPass(e) {
-        if(e.key === "Enter") validate();
-    }
-
-    function validate() {
-        const code = document.getElementById('passcode').value;
-        const msg = document.getElementById('login-msg');
-        
-        if(code === "1337" || code === "admin") {
-            msg.innerHTML = "ACCESS GRANTED. REDIRECTING...";
-            msg.style.color = "#0f0";
-            setTimeout(enterAdmin, 1000);
+    // 2. Authentication Logic
+    function verify() {
+        const pass = document.getElementById('passcode').value;
+        const box = document.getElementById('auth-box');
+        if (pass === 'defender-alpha') {
+            document.body.classList.add('authenticated');
+            startSystem();
         } else {
-            msg.innerHTML = "INVALID PASSCODE. ACCESS DENIED.";
-            msg.style.color = "var(--danger)";
-            // 震动效果
-            document.querySelector('.passcode-box').style.animation = "shake 0.2s 3";
-            setTimeout(() => { document.querySelector('.passcode-box').style.animation = ""; }, 600);
+            document.getElementById('error-msg').innerText = "UNAUTHORIZED ACCESS ATTEMPT DETECTED";
+            box.style.animation = "glitch 0.2s 3";
+            setTimeout(() => { box.style.animation = ""; }, 500);
         }
     }
 
-    function enterAdmin() {
-        document.getElementById('login-overlay').classList.add('hidden');
-        document.getElementById('home-view').classList.add('hidden');
-        document.getElementById('admin-view').classList.remove('hidden');
-        document.body.classList.add('admin-theme');
-        document.getElementById('sys-status').innerText = "SYSTEM CRITICAL / OVERRIDE";
-        document.getElementById('sys-status').style.color = "var(--danger)";
+    // 3. Dynamic Data Simulation
+    function startSystem() {
+        const sniffer = document.getElementById('sniffer-logs');
+        const protocols = ['TCP', 'UDP', 'HTTP', 'TLSv1.3', 'SSH', 'FTP'];
+        
+        // 模拟抓包流
+        setInterval(() => {
+            const row = document.createElement('div');
+            row.style.marginBottom = '4px';
+            const time = new Date().toLocaleTimeString();
+            const proto = protocols[Math.floor(Math.random()*protocols.length)];
+            const size = Math.floor(Math.random()*1500);
+            row.innerHTML = `<span style="color:var(--accent)">[${time}]</span> ${proto} src: 192.168.${Math.floor(Math.random()*255)}.X dst: 10.0.0.1 size: ${size}b`;
+            sniffer.prepend(row);
+            if(sniffer.childNodes.length > 30) sniffer.removeChild(sniffer.lastChild);
+        }, 300);
+
+        // 模拟威胁列表
+        const threats = document.getElementById('threat-list');
+        setInterval(() => {
+            if (Math.random() > 0.8) {
+                const threat = document.createElement('div');
+                threat.style.color = 'var(--alert)';
+                threat.style.borderLeft = '2px solid var(--alert)';
+                threat.style.paddingLeft = '5px';
+                threat.style.marginBottom = '10px';
+                threat.innerHTML = `<strong>CRITICAL:</strong> SQL Injection attempt blocked from 84.21.10.X <br><small>${new Date().toISOString()}</small>`;
+                threats.prepend(threat);
+                if(threats.childNodes.length > 5) threats.removeChild(threats.lastChild);
+            }
+        }, 3000);
+
+        // 模拟波动图
+        const wave = document.getElementById('wave-container');
+        for(let i=0; i<40; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'bar';
+            bar.style.animationDelay = (i * 0.1) + 's';
+            wave.appendChild(bar);
+        }
     }
 
-    // --- 3. 动态数据模拟 ---
+    // 4. Uptime Clock
+    let seconds = 0;
     setInterval(() => {
-        const count = document.getElementById('traffic-count');
-        if(count) {
-            let val = parseInt(count.innerText.replace(/,/g, ''));
-            count.innerText = (val + Math.floor(Math.random()*50)).toLocaleString();
-        }
+        seconds++;
+        const d = Math.floor(seconds / 86400);
+        const h = Math.floor((seconds % 86400) / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        document.getElementById('uptime').innerText = `UPTIME: ${String(d).padStart(2,'0')}:${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }, 1000);
 
-        const logs = document.getElementById('logs');
-        if(logs) {
-            const div = document.createElement('div');
-            div.style.padding = "5px 0";
-            div.innerHTML = `<span style="color:var(--secondary)">[${new Date().toLocaleTimeString()}]</span> Incoming packet from node_${Math.floor(Math.random()*999)} - <span style="color:#0f0">VERIFIED</span>`;
-            logs.prepend(div);
-            if(logs.childNodes.length > 15) logs.removeChild(logs.lastChild);
-        }
-    }, 2000);
-
-    // 旋转雷达动画 CSS 辅助
-    const style = document.createElement('style');
-    style.innerHTML = `
-        @keyframes rotate { from { transform: translate(-0%, -50%) rotate(0deg); } to { transform: translate(-0%, -50%) rotate(360deg); } }
-        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(10px); } 50% { transform: translateX(-10px); } 100% { transform: translateX(0); } }
-    `;
-    document.head.appendChild(style);
+    // 回车直接登录
+    document.getElementById('passcode').addEventListener('keypress', (e) => {
+        if(e.key === 'Enter') verify();
+    });
 
 </script>
+
+<style>
+    /* 额外的故障动画 */
+    @keyframes glitch {
+        0% { transform: translate(0); text-shadow: -2px 0 red, 2px 0 blue; }
+        20% { transform: translate(-5px, 5px); }
+        40% { transform: translate(-5px, -5px); }
+        60% { transform: translate(5px, 5px); }
+        80% { transform: translate(5px, -5px); }
+        100% { transform: translate(0); text-shadow: none; }
+    }
+</style>
+
 </body>
 </html>
